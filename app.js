@@ -27,19 +27,29 @@ const state = {
 };
 
 function loadPins() {
-  // TODO: parse localStorage[STORAGE_KEY] (try/catch), assign to state.pins.
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    state.pins = Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.error('Failed to load pins:', error);
+    state.pins = [];
+  }
 }
 
 function savePins() {
-  // TODO: localStorage.setItem(STORAGE_KEY, JSON.stringify(state.pins)).
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.pins));
 }
 
 function createPin({ title, category, note, lat, lng }) {
-  // TODO: build pin with id + createdAt, push to state.pins, savePins(), then renderAll().
+  state.pins.push({id: crypto.randomUUID() ,title: title, category: category, note: note, lat: lat, lng: lng, createdAt: new Date().toISOString()})
+  savePins()
+  renderAll()
 }
 
 function deletePin(id) {
-  // TODO: filter out of state.pins, savePins(), renderAll().
+  state.pins = state.pins.filter((v) => v.id != id)
+  savePins()
+  renderAll()
 }
 
 function getVisiblePins() {
@@ -52,12 +62,11 @@ function getVisiblePins() {
    2. Map & Tiles (and theme, since tiles follow it)
    ========================================================================== */
 const TILE_URLS = {
-  light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-  dark:  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  light: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  dark:  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
 };
 const TILE_OPTIONS = {
   maxZoom: 19,
-  subdomains: 'abcd',
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
 };
 
