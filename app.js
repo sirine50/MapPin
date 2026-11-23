@@ -125,16 +125,47 @@ function createMarkerIcon(category) {
 function renderMarkers() {
   // TODO: clear markerLayer + markers, then for each getVisiblePins():
   //       L.marker([lat, lng], { icon: createMarkerIcon(category) }).bindPopup(...), add to layer + map.
+  markerLayer.clearLayers();
+  markers.clear();
+
+  getVisiblePins().forEach((pin) => {
+    const marker = L.marker([pin.lat, pin.lng], {
+      icon: createMarkerIcon(pin.category),
+    })
+      .bindPopup(`<strong>${pin.title}</strong>`)
+      .addTo(markerLayer);
+
+    markers.set(pin.id, marker);
+  });
 }
 
 function renderPinList() {
   // TODO: empty #pin-list (this also removes the [data-sample] cards), then for each visible pin
   //       build a card matching the static markup in index.html (data-id, data-category,
   //       data-action="focus" / "delete"). Toggle #empty-state when there are none.
+  let pinsModel = ``;
+  const visiblePins = getVisiblePins();
+  const pinList = document.getElementById("pin-list");
+  pinList.innerHTML = "";
+
+  visiblePins.forEach((pin) => {
+    pinsModel += `<li class="pin-card" data-id="${pin.id}" data-category="${pin.category.toLowerCase().replace(" ", "-")}">
+          <div class="pin-card__top">
+            <h3 class="pin-card__title"><button type="button" data-action="focus">${pin.title}</button></h3>
+            <button class="icon-btn icon-btn--quiet" type="button" data-action="delete" aria-label="Delete pin: ${pin.title}"><i data-lucide="trash-2" aria-hidden="true"></i></button>
+          </div>
+          <span class="tag"><span class="dot"></span>${pin.category}</span>
+          <p class="pin-card__meta"><span class="coords">${pin.lat}, ${pin.lng}</span><time datetime="2026-10-14">${pin.createdAt}</time></p>
+          <p class="pin-card__note">${pin.note}</p>
+        </li>`;
+  });
+
+  $('#empty-state').hidden = visiblePins.length > 0;
+  pinList.innerHTML = pinsModel;
 }
 
 function updatePinCount() {
-  // TODO: $('#pin-count').textContent = state.pins.length;
+    $('#pin-count').textContent = state.pins.length;
 }
 
 function renderAll() {
@@ -211,8 +242,15 @@ function showToast(message, ms = 3000) {
 }
 
 function onPinSubmit(e) {
-  e.preventDefault();
+  e.preventDefault()
+  
   // TODO: read fields, validate title, createPin({...}) (or update when #pin-id is set), then:
+  const title = $("#pin-title").value
+  const category = $("#pin-category").value
+  const note = $("#pin-note").value
+  const lat = Number($("#pin-lat").value)
+  const lng = Number($("#pin-lng").value)
+  createPin({ title, category, note, lat, lng })
   closePinModal();
 }
 
