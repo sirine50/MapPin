@@ -94,7 +94,7 @@ function applyTheme(theme) {
   root.dataset.theme = theme;
   setTileTheme(theme);
   setTimeout(() => root.classList.remove('theme-transition'), 300);
-  // TODO: persist with localStorage.setItem(THEME_KEY, theme).
+  localStorage.setItem(THEME_KEY, theme)
 }
 
 function onMapClick(e) {
@@ -102,9 +102,9 @@ function onMapClick(e) {
 }
 
 function flyToPin(id) {
-  // TODO: find pin, map.flyTo([lat, lng], Math.max(map.getZoom(), 14)), set active state, open popup.
+  let pin = state.pins.find(pin => pin.id == id)
+  map.flyTo([pin.lat, pin.lng], Math.max(map.getZoom(), 14))
 }
-
 /* ==========================================================================
    3. Markers & Rendering
    ========================================================================== */
@@ -162,6 +162,7 @@ function renderPinList() {
 
   $('#empty-state').hidden = visiblePins.length > 0;
   pinList.innerHTML = pinsModel;
+  lucide.createIcons();
 }
 
 function updatePinCount() {
@@ -178,14 +179,34 @@ function renderAll() {
    4. Search & Filters
    ========================================================================== */
 async function searchLocations(query) {
-  // TODO: fetch `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q=${encodeURIComponent(query)}`
-  //       Keep to ~1 request/second and don't search on every keystroke (Nominatim usage policy).
-  //       Return the parsed array and pass it to renderSearchResults().
+  const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&q=${encodeURIComponent(query)}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`Response status: ${res.status}`);
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Search failed:', error);
+    return [];
+  }
 }
 
 function renderSearchResults(results) {
-  // TODO: fill #search-results with <li><button type="button" data-lat data-lng>display_name</button></li>,
-  //       then remove its [hidden] attribute. Show a "No places found" item for an empty array.
+  const searchList = $("#search-results");
+  searchList.innerHTML = "";
+  let list = "";
+
+  if (!results.length) {
+    list = `<li>No places found</li>`;
+  } else {
+    results.forEach((res) => {
+      list += `<li><button type="button" data-lat="${res.lat}" data-lng="${res.lon}">${res.display_name}</button></li>`;
+    });
+  }
+
+  searchList.innerHTML = list;
+  searchList.removeAttribute("hidden");
 }
 
 function clearSearchResults() {
@@ -259,20 +280,23 @@ function onPinListClick(e) {
   if (!btn) return;
   const id = btn.closest('.pin-card')?.dataset.id;
   if (btn.dataset.action === 'focus')  flyToPin(id);
-  if (btn.dataset.action === 'delete') deletePin(id); // TODO: confirm first if you want an undo step
+  if (btn.dataset.action === 'delete') deletePin(id); 
+  // TODO: confirm first if you want an undo step
 }
 
 function onSearchSubmit(e) {
   e.preventDefault();
   const query = $('#search-input').value.trim();
   if (!query) return clearSearchResults();
-  // TODO: searchLocations(query).then(renderSearchResults)
+  searchLocations(query).then(renderSearchResults)
 }
 
 function onSearchResultClick(e) {
   const btn = e.target.closest('button[data-lat]');
   if (!btn) return;
-  // TODO: map.flyTo([btn.dataset.lat, btn.dataset.lng], 15), openPinModal({ lat, lng }), clearSearchResults().
+   map.flyTo([btn.dataset.lat, btn.dataset.lng], 15), 
+   openPinModal({ lat, lng }), 
+   clearSearchResults()
 }
 
 function toggleSidebar() {
